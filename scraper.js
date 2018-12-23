@@ -1,6 +1,9 @@
-const rp      = require('request-promise');
-const cheerio = require('cheerio');
-const argv    = require('yargs').argv;
+const rp        = require('request-promise');
+const cheerio   = require('cheerio');
+const argv      = require('yargs').argv;
+const Entities  = require('html-entities').AllHtmlEntities;
+
+const decoder   = new Entities();
 
 var options = {
     uri: argv.url,
@@ -11,8 +14,10 @@ var options = {
 
 rp(options)
     .then(function ($) {
-        const name = $('h1[itemprop=name]').html();
-        console.log('Name: ' + name);
+        const name  = decoder.decode($('h1[itemprop=name]').html());
+        const model = decoder.decode($('p[itemprop=model]').html());
+
+        console.log('Name: ' + name + ' - ' + model);
         if ($('#add-remove-buttons .button.sold-out').length > 0) {
             console.log('Product is sold out.');
         } else {
