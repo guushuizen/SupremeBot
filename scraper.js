@@ -5,25 +5,49 @@ const Entities  = require('html-entities').AllHtmlEntities;
 
 const decoder   = new Entities();
 
-var options = {
-    uri: argv.url,
-    transform: function (body) {
-        return cheerio.load(body);
-    }
-};
-
-rp(options)
-    .then(function ($) {
-        const name  = decoder.decode($('h1[itemprop=name]').html());
-        const model = decoder.decode($('p[itemprop=model]').html());
-
-        console.log('Name: ' + name + ' - ' + model);
-        if ($('#add-remove-buttons .button.sold-out').length > 0) {
-            console.log('Product is sold out.');
-        } else {
-            console.log('Product is in stock!');
+module.exports = (url) => {
+    // console.log(url);
+    const options = {
+        uri: url,
+        transform: function (body) {
+            return cheerio.load(body);
         }
-    })
-    .catch(function (err) {
-        console.log('Error occurred', err);
+    };
+
+    return new Promise((resolve, reject) => {
+        rp(options)
+            .then(function ($) {
+                const name   = decoder.decode($('h1[itemprop=name]').html());
+                const model  = decoder.decode($('p[itemprop=model]').html());
+
+                let   sizes  = null;
+                let   status = null;
+
+                if ($("select#size").length > 0) {
+                    sizes = [];
+
+                    $("select#size option").each((index, el) => {
+                        sizes.push($(el).html());
+                    });
+                }
+
+                if ($('#add-remove-buttons .button.sold-out').length > 0) {
+                    status = false;
+                } else {
+                    status = true;
+                }
+
+                const toReturn = {
+                    url:    url,
+                    name:   name,
+                    model:  model,
+                    sizes:  sizes,
+                }
+
+                resolve(toReturn);
+            })
+            .catch(function (err) {
+                reject(err);
+            });
     });
+}
